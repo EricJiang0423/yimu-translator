@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & test (macOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Core smoke tests
+        run: bash scripts/test-direct.sh
+
+      - name: Build app target
+        run: bash scripts/build-direct.sh
+
+      - name: Package .app bundle + DMG
+        run: bash scripts/build-app.sh
+
+      - name: Upload .app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: yimu-translator-app
+          path: .build/app/译幕.app
+          if-no-files-found: error
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: yimu-translator-dmg
+          path: .build/app/译幕.dmg
+          if-no-files-found: error
