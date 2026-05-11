@@ -14,7 +14,32 @@
 - **图标：** 纯几何黑白——取景括角框住两行字幕条，无渐变、无文字。
 - **翻译服务：** 仅腾讯云 TMT。
 
-## 运行
+## 安装（下载预编译版）
+
+> ⚠️ 译幕没有 Apple 开发者账号，发布的包是 **ad-hoc 签名、未公证**。macOS Gatekeeper 首次启动会拦截，需要手动放行一次——这是常态，不是出问题了。
+
+**方式一：Homebrew（推荐）**
+
+```bash
+brew install --cask ericjiang0423/tap/yimu-translator
+```
+
+**方式二：从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 DMG**
+
+下载 `yimu-translator-<版本>.dmg`，把「译幕.app」拖进「应用程序」，然后：
+
+1. **右键点「译幕.app」→ 打开**（再点一次「打开」），或在终端执行：
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/译幕.app
+   ```
+2. 打开 App，授予屏幕录制权限：「系统设置 → 隐私与安全性 → 屏幕录制」里勾上「译幕」。
+3. **完全退出译幕（⌘Q），再重新打开**——屏幕录制权限只在启动时读取，不重启不生效。
+
+> 屏幕录制权限是按 App 的代码签名身份记录的。只要你**不用新版本覆盖**当前这个 `.app`，授权就一直有效；每次替换成新 build 都需要按上面重新放行 + 授权一次。
+
+各 Release 的 `SHA256SUMS.txt` 可用于校验下载文件。
+
+## 从源码构建运行
 
 ```bash
 scripts/build-direct.sh
@@ -75,4 +100,12 @@ swift test                # 见下方说明
 
 `scripts/test-direct.sh` 用 `swiftc` 直接编译核心模块和冒烟测试，绕开本地 SwiftPM manifest 的问题。`swift test` 可能在编译源码前就失败——当本地 Command Line Tools 的 `PackageDescription` 与当前 Swift 工具链不匹配时会这样。
 
-GitHub Actions（`.github/workflows/ci.yml`）在 `macos-15` 上跑上面三个脚本，并把 `.app` 与 DMG 作为产物上传。
+GitHub Actions：
+
+- `.github/workflows/ci.yml`：push 到 `main` / PR 时在 `macos-15` 上跑上面的脚本并上传 `.app` 与 DMG 产物。
+- `.github/workflows/release.yml`：推送 `v*` tag 时自动构建、打包、生成 `SHA256SUMS.txt` 并创建 GitHub Release。发布新版本就：
+  ```bash
+  # 先把 Resources/Info.plist 里的 CFBundleShortVersionString 改好
+  git tag v1.0.0 && git push origin v1.0.0
+  ```
+  Release 出来后，可把 `SHA256SUMS.txt` 里 DMG 的哈希填回 Homebrew tap 的 cask（当前 cask 用的是 `sha256 :no_check`）。

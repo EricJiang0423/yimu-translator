@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish release
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke tests
+        run: bash scripts/test-direct.sh
+
+      - name: Build .app + DMG
+        run: bash scripts/build-app.sh
+
+      - name: Stage release assets
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          mkdir -p dist
+          cp ".build/app/译幕.dmg" "dist/yimu-translator-${V}.dmg"
+          ditto -c -k --sequesterRsrc --keepParent ".build/app/译幕.app" "dist/yimu-translator-${V}-app.zip"
+          ( cd dist && shasum -a 256 yimu-translator-*.dmg yimu-translator-*.zip > SHA256SUMS.txt )
+          cat dist/SHA256SUMS.txt
+
+      - name: Release notes
+        run: |
+          cat > dist/notes.md <<'EOF'
+          **框住台词，即刻入戏。** macOS 游戏悬浮翻译工具：框选屏幕区域 → Apple Vision 本地 OCR → 腾讯云 TMT 翻译 → 悬浮层显示在原文上方。
+
+          ## 安装（未签名 / 未公证）
+
+          下载 `yimu-translator-<版本>.dmg`，把「译幕.app」拖进「应用程序」。这个 App 是 ad-hoc 签名、没有 Apple 公证，首次启动 macOS 会拦截：
+
+          - **右键点 App → 打开**（再点一次「打开」），或在终端执行：`xattr -dr com.apple.quarantine /Applications/译幕.app`
+          - 然后到「系统设置 → 隐私与安全性 → 屏幕录制」勾上「译幕」，**完全退出（⌘Q）后重新打开**
+          - 只要之后不用新版本覆盖这个 App，屏幕录制权限就会一直保留
+
+          也可以用 Homebrew：
+
+          ```
+          brew install --cask ericjiang0423/tap/yimu-translator
+          ```
+
+          首次使用需自备腾讯云 TMT 的 SecretId / SecretKey，在设置左栏填好后点「测试 API」验证。
+
+          各文件的 SHA-256 见附件 `SHA256SUMS.txt`。
+          EOF
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          V="${{ steps.ver.outputs.version }}"
+          ASSETS=( "dist/yimu-translator-${V}.dmg" "dist/yimu-translator-${V}-app.zip" "dist/SHA256SUMS.txt" )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${ASSETS[@]}" --clobber
+          else
+            gh release create "$TAG" --title "译幕 $TAG" --notes-file dist/notes.md "${ASSETS[@]}"
+          fi
