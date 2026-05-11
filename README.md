@@ -18,9 +18,7 @@
 
 译幕没有 Apple 开发者账号，发布的二进制是 ad-hoc 签名、未公证。因此推荐**从终端（Terminal）运行**——只需给 Terminal.app 授权一次屏幕录制，以后所有版本永不重新授权。
 
-### 方式一（推荐）：下载 CLI 包，从终端运行
-
-从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 `yimu-translator-<版本>-cli.zip`，解压后终端运行：
+从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 `yimu-translator-<版本>.zip`，解压后终端运行：
 
 ```bash
 cd 解压目录
@@ -38,26 +36,9 @@ chmod +x run.sh
 
 > Terminal 授权一次，永久有效。以后下载新版本替换文件即可，权限不会丢失。
 
-### 方式二（备选）：.app / DMG / Homebrew
-
-下载 `yimu-translator-<版本>.dmg` 安装到应用程序，或通过 Homebrew：
-
-```bash
-brew install --cask ericjiang0423/tap/yimu-translator
-```
-
-> ⚠️ 未公证 .app 在 macOS Sequoia 上权限流程复杂：首次启动需 Gatekeeper 放行（系统设置 → 隐私 → 仍要打开），且每次更新版本后因签名指纹变化需要重新授权屏幕录制。**如果你遇到权限问题，建议切换回方式一。**
-
-卸载：
-
-```bash
-brew uninstall --cask yimu-translator
-rm -rf ~/Library/Preferences/com.yimu.app.plist
-```
-
 各 Release 附带的 `SHA256SUMS.txt` 可用于校验下载文件。
 
-## 从源码构建运行
+## 源码构建
 
 需要安装 Xcode Command Line Tools：`xcode-select --install`。
 
@@ -67,13 +48,6 @@ scripts/run.sh              # 编译后直接运行
 ```
 
 首次启动——如果系统弹出屏幕录制对话框，点 **「允许」**；如果点了不允许，去「系统设置 → 隐私与安全性 → 屏幕录制」勾上 Terminal.app，完全退出终端重开。
-
-构建 .app 安装包与 DMG：
-
-```bash
-scripts/build-app.sh
-open ".build/app/译幕.app"
-```
 
 ## 快速上手
 
@@ -134,8 +108,8 @@ open ".build/app/译幕.app"
 
 ```bash
 scripts/test-direct.sh    # 用 swiftc 编译核心模块并跑冒烟测试
-scripts/build-direct.sh   # 编译直接可执行文件
-scripts/build-app.sh      # 打 .app 与 DMG
+scripts/build-direct.sh   # 编译 CLI 二进制
+scripts/run.sh            # 编译 + 运行
 swift test                # 见下方说明
 ```
 
@@ -143,9 +117,8 @@ swift test                # 见下方说明
 
 GitHub Actions：
 
-- `.github/workflows/ci.yml`：push 到 `main` / PR 时在 `macos-15` 上跑构建与测试，并上传产物。
-- `.github/workflows/release.yml`：推送 `v*` tag 时自动构建、打包、发布 GitHub Release。发新版本：
+- `.github/workflows/ci.yml`：push 到 `main` / PR 时在 `macos-15` 上跑构建与测试。
+- `.github/workflows/release.yml`：推送 `v*` tag 时自动构建 CLI zip 并发布 GitHub Release。发新版本：
   ```bash
   git tag v1.0.1 && git push origin v1.0.1
   ```
-  Release 发出后，把 `SHA256SUMS.txt` 里 DMG 的哈希更新到 Homebrew tap 的 cask 中。

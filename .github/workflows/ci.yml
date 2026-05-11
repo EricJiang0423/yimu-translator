@@ -28,22 +28,12 @@ jobs:
       - name: Core smoke tests
         run: bash scripts/test-direct.sh
 
-      - name: Build app target
+      - name: Build CLI
         run: bash scripts/build-direct.sh
 
-      - name: Package .app bundle + DMG
-        run: bash scripts/build-app.sh
-
-      - name: Upload .app bundle
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: yimu-translator-app
-          path: .build/app/译幕.app
-          if-no-files-found: error
-
-      - name: Upload DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: yimu-translator-dmg
-          path: .build/app/译幕.dmg
+          name: game-translator
+          path: .build/direct/game-translator
           if-no-files-found: error

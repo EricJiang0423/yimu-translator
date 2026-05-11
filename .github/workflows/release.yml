@@ -25,27 +25,23 @@ jobs:
       - name: Smoke tests
         run: bash scripts/test-direct.sh
 
-      - name: Build .app + DMG
-        run: bash scripts/build-app.sh
+      - name: Build CLI
+        run: bash scripts/build-direct.sh
 
-      - name: Stage release assets
+      - name: Package CLI zip
         run: |
           V="${{ steps.ver.outputs.version }}"
-          mkdir -p dist cli
-          # DMG + .app zip (for .app/Homebrew users)
-          cp ".build/app/译幕.dmg" "dist/yimu-translator-${V}.dmg"
-          ditto -c -k --sequesterRsrc --keepParent ".build/app/译幕.app" "dist/yimu-translator-${V}-app.zip"
-          # CLI zip (Terminal mode — recommended)
-          cp ".build/app/译幕.app/Contents/MacOS/game-translator" cli/
-          cp ".build/app/译幕.app/Contents/MacOS/libGameTranslatorCore.dylib" cli/
-          cat > cli/run.sh <<'CLIEOF'
+          mkdir -p dist/cli
+          cp ".build/direct/game-translator" dist/cli/
+          cp ".build/direct/libGameTranslatorCore.dylib" dist/cli/
+          cat > dist/cli/run.sh <<'CLIEOF'
 #!/bin/bash
 cd "$(dirname "$0")"
 ./game-translator
 CLIEOF
-          chmod +x cli/run.sh cli/game-translator
-          ( cd cli && ditto -c -k --sequesterRsrc --keepParent . "../dist/yimu-translator-${V}-cli.zip" )
-          ( cd dist && shasum -a 256 yimu-translator-*.dmg yimu-translator-*.zip > SHA256SUMS.txt )
+          chmod +x dist/cli/run.sh dist/cli/game-translator
+          ( cd dist/cli && ditto -c -k --sequesterRsrc --keepParent . "../yimu-translator-${V}.zip" )
+          ( cd dist && shasum -a 256 "yimu-translator-${V}.zip" > SHA256SUMS.txt )
           cat dist/SHA256SUMS.txt
 
       - name: Release notes
@@ -55,19 +51,15 @@ CLIEOF
 
           ## 使用方式
 
-          **推荐（Terminal 模式，权限稳定）：**
-          下载 `yimu-translator-<版本>-cli.zip`，解压后在终端运行：
+          下载 `yimu-translator-<版本>.zip`，解压后在终端运行：
           ```bash
           cd 解压目录
           chmod +x run.sh && ./run.sh
           ```
           首次需授权 Terminal.app 屏幕录制权限（一次授权，永久有效）。
 
-          **备选（.app 模式）：**
-          下载 DMG 安装到应用程序，或 `brew install --cask ericjiang0423/tap/yimu-translator`。
-
-          首次使用需自备腾讯云 TMT 的 SecretId / SecretKey，在设置左栏填好后点「测试 API」验证。
-          各文件 SHA-256 见附件 `SHA256SUMS.txt`。
+          需自备腾讯云 TMT 的 SecretId / SecretKey。详细配置指南见 README。
+          文件 SHA-256 见附件 `SHA256SUMS.txt`。
           EOF
 
       - name: Publish GitHub release
@@ -76,7 +68,7 @@ CLIEOF
         run: |
           TAG="${{ steps.ver.outputs.tag }}"
           V="${{ steps.ver.outputs.version }}"
-          ASSETS=( "dist/yimu-translator-${V}.dmg" "dist/yimu-translator-${V}-app.zip" "dist/yimu-translator-${V}-cli.zip" "dist/SHA256SUMS.txt" )
+          ASSETS=( "dist/yimu-translator-${V}.zip" "dist/SHA256SUMS.txt" )
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "${ASSETS[@]}" --clobber
           else
