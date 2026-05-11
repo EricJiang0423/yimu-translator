@@ -46,10 +46,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         self.hotkeyManager = hotkeyManager
 
-        if !ScreenCaptureService.hasScreenCaptureAccess {
-            try? ScreenCaptureService.ensureCaptureAccess()
-            PermissionAlert.showScreenCaptureHint()
-        }
+        // Request capture access at a predictable time. No preflight check —
+        // CGPreflightScreenCaptureAccess() is unreliable for unsigned apps on
+        // Sequoia. ScreenCaptureKit will prompt if needed when capture starts.
+        ScreenCaptureService.requestAccessIfNeeded()
+        PermissionAlert.showScreenCaptureHint()
     }
 }
 
@@ -57,9 +58,9 @@ enum PermissionAlert {
     @MainActor
     static func showScreenCaptureHint() {
         let alert = NSAlert()
-        alert.messageText = "需要屏幕录制权限"
-        alert.informativeText = "译幕 需要通过屏幕录制来截取游戏台词区域。\n\n请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出 App（⌘Q）再重新打开，权限才会生效。"
-        alert.alertStyle = .warning
+        alert.messageText = "屏幕录制权限"
+        alert.informativeText = "译幕 需要通过屏幕录制来截取游戏台词。如果系统弹出了权限对话框，请点「允许」。\n\n如果点了「不允许」或没看到弹窗，请到「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出 App（⌘Q）再重新打开。"
+        alert.alertStyle = .informational
         alert.addButton(withTitle: "好")
         alert.runModal()
     }

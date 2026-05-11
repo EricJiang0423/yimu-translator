@@ -7,39 +7,35 @@ import CoreGraphics
 
 @MainActor
 final class ScreenCaptureService {
-    /// Tracks whether we've called CGRequestScreenCaptureAccess this session
-    /// so we don't spam the OS dialog on every poll cycle.
+    /// Tracks whether we've called CGRequestScreenCaptureAccess this session.
+    /// On Sequoia, CGPreflightScreenCaptureAccess() is unreliable for unsigned
+    /// apps — it can return false even when the app actually has permission.
+    /// Solution: skip preflight entirely. Just try ScreenCaptureKit directly.
+    /// The first call triggers the OS permission dialog; if it fails we surface
+    /// the error and let the user retry after configuring Settings.
     private static var requestedAccessThisSession = false
 
-    static var hasScreenCaptureAccess: Bool {
-        CGPreflightScreenCaptureAccess()
-    }
-
-    /// Ensures screen-recording access is granted.
-    /// Calls `CGRequestScreenCaptureAccess()` at most once per session.
-    /// After the dialog (`Allow`) the permission applies to the current process
-    /// immediately — so we re-check. If still denied (`Deny` / canceled / settings
-    /// path) we throw and tell the user to restart.
-    static func ensureCaptureAccess() throws {
-        if CGPreflightScreenCaptureAccess() { return }
-
-        if !requestedAccessThisSession {
-            requestedAccessThisSession = true
-            let _ = CGRequestScreenCaptureAccess()
-            // Re-check — "Allow" takes effect right away
-            if CGPreflightScreenCaptureAccess() { return }
-        }
-
-        throw ScreenCaptureError.permissionDenied
+    /// Call this at startup so the OS dialog appears at a predictable time
+    /// (not suddenly mid-capture). At most once per session.
+    static func requestAccessIfNeeded() {
+        guard !requestedAccessThisSession else { return }
+        requestedAccessThisSession = true
+        CGRequestScreenCaptureAccess()
     }
 
     func capture(region appKitRegion: CGRect) async throws -> CGImage {
-        try Self.ensureCaptureAccess()
+        // No preflight — just try ScreenCaptureKit. The OS handles the dialog.
         guard let screen = screen(containing: appKitRegion),
               let displayID = displayID(for: screen) else {
             throw ScreenCaptureError.displayNotFound
         }
-        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+
+        let content: SCShareableContent
+        do {
+            content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        } catch {
+            throw ScreenCaptureError.permissionDenied(underlying: error)
+        }
         guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
             throw ScreenCaptureError.displayNotFound
         }
@@ -56,7 +52,11 @@ final class ScreenCaptureService {
         configuration.capturesAudio = false
         configuration.scalesToFit = true
 
-        return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        do {
+            return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        } catch {
+            throw ScreenCaptureError.permissionDenied(underlying: error)
+        }
     }
 
     func fingerprint(for image: CGImage) -> UInt64 {
@@ -115,15 +115,18 @@ final class ScreenCaptureService {
 }
 
 enum ScreenCaptureError: LocalizedError {
-    case permissionDenied
+    case permissionDenied(underlying: Error? = nil)
     case displayNotFound
 
     var errorDescription: String? {
         switch self {
-        case .permissionDenied:
-            return "屏幕录制权限未开启：点「好」关闭后，如果系统弹出权限对话框请点「允许」，然后重试这里。如果已经点了「不允许」，请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出（⌘Q）后重新打开 App。"
+        case .permissionDenied(let underlying):
+            if let e = underlying {
+                return "截取屏幕失败：\(e.localizedDescription)\n\n请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后重试；如果已勾选仍需重启 App（⌘Q 后重新打开）。"
+            }
+            return "屏幕录制失败。请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后重启 App。"
         case .displayNotFound:
-            return "Unable to find the selected display."
+            return "找不到对应显示器。"
         }
     }
 }

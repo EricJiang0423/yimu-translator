@@ -118,13 +118,8 @@ final class TranslationCoordinator {
         let targetRegion = anchor
             ?? mainWindowController?.window?.frame
             ?? CGRect(x: 240, y: 240, width: 460, height: 120)
-        let screenAccess = ScreenCaptureService.hasScreenCaptureAccess
-        let permissionLine = screenAccess
-            ? "屏幕录制权限：已授予 ✓"
-            : "屏幕录制权限：未开启。截取区域会失败，请在设置中启用后重启 App。"
-
         overlayWindow.show(
-            text: "译幕 overlay is visible.\n\(permissionLine)",
+            text: "译幕 overlay is visible.\n屏幕录制将在首次截取时请求权限。",
             near: targetRegion,
             configuration: configuration,
             forceVisible: true
@@ -138,7 +133,7 @@ final class TranslationCoordinator {
                 configuration: configuration,
                 forceVisible: true
             )
-            return "译幕 self test passed. \(permissionLine)"
+            return "译幕 self test passed."
         } catch {
             overlayWindow.show(
                 text: "Overlay OK.\nTencent API failed: \(error.localizedDescription)",
@@ -146,7 +141,7 @@ final class TranslationCoordinator {
                 configuration: configuration,
                 forceVisible: true
             )
-            return "Overlay test passed. Tencent API failed: \(error.localizedDescription). \(permissionLine)"
+            return "Overlay test passed. Tencent API failed: \(error.localizedDescription)."
         }
     }
 
