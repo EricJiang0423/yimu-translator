@@ -37,7 +37,11 @@ jobs:
           cat > dist/cli/run.sh <<'CLIEOF'
 #!/bin/bash
 cd "$(dirname "$0")"
-./game-translator
+# 自动移除 Gatekeeper 拦截标记（下载的二进制会带 quarantine）
+if xattr -p com.apple.quarantine ./game-translator &>/dev/null 2>&1; then
+    xattr -dr com.apple.quarantine ./game-translator 2>/dev/null
+fi
+exec ./game-translator
 CLIEOF
           chmod +x dist/cli/run.sh dist/cli/game-translator
           ( cd dist/cli && ditto -c -k --sequesterRsrc --keepParent . "../yimu-translator-${V}.zip" )

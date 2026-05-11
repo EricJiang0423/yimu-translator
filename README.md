@@ -16,25 +16,27 @@
 
 ## 安装
 
-译幕没有 Apple 开发者账号，发布的二进制是 ad-hoc 签名、未公证。因此推荐**从终端（Terminal）运行**——只需给 Terminal.app 授权一次屏幕录制，以后所有版本永不重新授权。
+译幕没有 Apple 开发者账号，发布的二进制是 ad-hoc 签名、未公证。下载后第一次跑，macOS Gatekeeper 会拦截——需要手动放行一次。
 
 从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 `yimu-translator-<版本>.zip`，解压后终端运行：
 
 ```bash
 cd 解压目录
-chmod +x run.sh
-./run.sh
-```
-
-或直接：
-
-```bash
 ./game-translator
 ```
 
-首次使用会弹出屏幕录制权限对话框——点 **「允许」**。如果点了不允许或没看到弹窗，去「系统设置 → 隐私与安全性 → 屏幕录制」勾上 **Terminal.app**，**完全退出终端（⌘Q）再重新打开**。
+或用附带的脚本：
 
-> Terminal 授权一次，永久有效。以后下载新版本替换文件即可，权限不会丢失。
+```bash
+./run.sh
+```
+
+**首次启动流程：**
+
+1. **Gatekeeper 放行**——macOS 会弹窗拦截。去「系统设置 → 隐私与安全性」拉到**安全性**区域，点「game-translator 已被阻止打开」旁边的 **「仍要打开」**。`run.sh` 会自动处理 quarantine 标记。
+2. **屏幕录制授权**——如果系统弹出权限对话框点 **「允许」**；如果点了不允许或没看到，去「系统设置 → 隐私与安全性 → 屏幕录制」勾上 **Terminal.app**，**完全退出终端（⌘Q）再重新打开**。
+
+> Token 授权一次，永久有效。以后下载新版本替换文件即可，权限不会丢失。
 
 各 Release 附带的 `SHA256SUMS.txt` 可用于校验下载文件。
 
