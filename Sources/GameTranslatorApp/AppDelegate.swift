@@ -47,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.hotkeyManager = hotkeyManager
 
         if !ScreenCaptureService.hasScreenCaptureAccess {
-            _ = ScreenCaptureService.requestScreenCaptureAccess()
+            try? ScreenCaptureService.ensureCaptureAccess()
             PermissionAlert.showScreenCaptureHint()
         }
     }
@@ -57,10 +57,10 @@ enum PermissionAlert {
     @MainActor
     static func showScreenCaptureHint() {
         let alert = NSAlert()
-        alert.messageText = "译幕 needs Screen Recording permission"
-        alert.informativeText = "Enable Screen Recording for 译幕 or Terminal, then restart the app."
+        alert.messageText = "需要屏幕录制权限"
+        alert.informativeText = "译幕 需要通过屏幕录制来截取游戏台词区域。\n\n请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出 App（⌘Q）再重新打开，权限才会生效。"
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "好")
         alert.runModal()
     }
 }

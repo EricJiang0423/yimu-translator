@@ -7,20 +7,32 @@ import CoreGraphics
 
 @MainActor
 final class ScreenCaptureService {
+    /// Tracks whether we've called CGRequestScreenCaptureAccess this session
+    /// so we don't spam the OS dialog on every poll cycle.
+    private static var requestedAccessThisSession = false
+
     static var hasScreenCaptureAccess: Bool {
         CGPreflightScreenCaptureAccess()
     }
 
-    @discardableResult
-    static func requestScreenCaptureAccess() -> Bool {
-        CGRequestScreenCaptureAccess()
+    /// Ensures screen-recording access is granted.
+    /// Calls `CGRequestScreenCaptureAccess()` at most once per session.
+    /// If the user grants through the system dialog, the permission only takes
+    /// effect *after* the current process is restarted — so we always throw
+    /// permissionDenied here and tell the user to restart.
+    static func ensureCaptureAccess() throws {
+        if CGPreflightScreenCaptureAccess() { return }
+
+        if !requestedAccessThisSession {
+            requestedAccessThisSession = true
+            CGRequestScreenCaptureAccess()
+        }
+
+        throw ScreenCaptureError.permissionDenied
     }
 
     func capture(region appKitRegion: CGRect) async throws -> CGImage {
-        guard Self.hasScreenCaptureAccess else {
-            _ = Self.requestScreenCaptureAccess()
-            throw ScreenCaptureError.permissionDenied
-        }
+        try Self.ensureCaptureAccess()
         guard let screen = screen(containing: appKitRegion),
               let displayID = displayID(for: screen) else {
             throw ScreenCaptureError.displayNotFound
@@ -107,7 +119,7 @@ enum ScreenCaptureError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return "Screen Recording permission is not enabled. Enable it for Terminal or this app in System Settings, then restart."
+            return "屏幕录制权限未开启。请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出（⌘Q）后重新打开 App。"
         case .displayNotFound:
             return "Unable to find the selected display."
         }

@@ -120,8 +120,8 @@ final class TranslationCoordinator {
             ?? CGRect(x: 240, y: 240, width: 460, height: 120)
         let screenAccess = ScreenCaptureService.hasScreenCaptureAccess
         let permissionLine = screenAccess
-            ? "Screen Recording: OK"
-            : "Screen Recording: missing. Region capture will fail until permission is enabled and the app is restarted."
+            ? "屏幕录制权限：已授予 ✓"
+            : "屏幕录制权限：未开启。截取区域会失败，请在设置中启用后重启 App。"
 
         overlayWindow.show(
             text: "译幕 overlay is visible.\n\(permissionLine)",
@@ -260,6 +260,12 @@ final class TranslationCoordinator {
                 overlayWindow.show(text: translated, near: region, configuration: configuration, forceVisible: force)
                 onTranslation?(text, translated)
                 onStatusChange?("Translated \(text.count) characters with Tencent TMT.")
+            } catch is ScreenCaptureError {
+                // Permission error → pause polling to avoid spamming the user.
+                // User must restart after granting screen recording access.
+                pause()
+                onStatusChange?("屏幕录制权限未开启，已暂停轮询。请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出后重新打开。")
+                overlayWindow.showError("屏幕录制权限未开启，已暂停轮询。\n请到系统设置 → 隐私 → 屏幕录制中勾选「译幕」，\n然后完全退出 App 再重新打开。", near: region, configuration: configurationStore.configuration)
             } catch {
                 overlayWindow.showError(error.localizedDescription, near: region, configuration: configurationStore.configuration)
                 onStatusChange?("Translation failed: \(error.localizedDescription)")
