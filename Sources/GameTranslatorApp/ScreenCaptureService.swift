@@ -1,6 +1,9 @@
 import AppKit
 import CoreGraphics
-import ScreenCaptureKit
+// Newer SDKs (Xcode 16+) ship ScreenCaptureKit without Sendable annotations, which
+// trips Swift 6 strict-concurrency checks. This class is @MainActor, so the awaited
+// calls hop back to the main actor anyway — downgrade the cross-module diagnostics.
+@preconcurrency import ScreenCaptureKit
 
 @MainActor
 final class ScreenCaptureService {
