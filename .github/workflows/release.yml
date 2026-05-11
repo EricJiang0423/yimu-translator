@@ -31,9 +31,20 @@ jobs:
       - name: Stage release assets
         run: |
           V="${{ steps.ver.outputs.version }}"
-          mkdir -p dist
+          mkdir -p dist cli
+          # DMG + .app zip (for .app/Homebrew users)
           cp ".build/app/译幕.dmg" "dist/yimu-translator-${V}.dmg"
           ditto -c -k --sequesterRsrc --keepParent ".build/app/译幕.app" "dist/yimu-translator-${V}-app.zip"
+          # CLI zip (Terminal mode — recommended)
+          cp ".build/app/译幕.app/Contents/MacOS/game-translator" cli/
+          cp ".build/app/译幕.app/Contents/MacOS/libGameTranslatorCore.dylib" cli/
+          cat > cli/run.sh <<'CLIEOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+./game-translator
+CLIEOF
+          chmod +x cli/run.sh cli/game-translator
+          ( cd cli && ditto -c -k --sequesterRsrc --keepParent . "../dist/yimu-translator-${V}-cli.zip" )
           ( cd dist && shasum -a 256 yimu-translator-*.dmg yimu-translator-*.zip > SHA256SUMS.txt )
           cat dist/SHA256SUMS.txt
 
@@ -42,23 +53,21 @@ jobs:
           cat > dist/notes.md <<'EOF'
           **框住台词，即刻入戏。** macOS 游戏悬浮翻译工具：框选屏幕区域 → Apple Vision 本地 OCR → 腾讯云 TMT 翻译 → 悬浮层显示在原文上方。
 
-          ## 安装（未签名 / 未公证）
+          ## 使用方式
 
-          下载 `yimu-translator-<版本>.dmg`，把「译幕.app」拖进「应用程序」。这个 App 是 ad-hoc 签名、没有 Apple 公证，首次启动 macOS 会拦截：
-
-          - **右键点 App → 打开**（再点一次「打开」），或在终端执行：`xattr -dr com.apple.quarantine /Applications/译幕.app`
-          - 然后到「系统设置 → 隐私与安全性 → 屏幕录制」勾上「译幕」，**完全退出（⌘Q）后重新打开**
-          - 只要之后不用新版本覆盖这个 App，屏幕录制权限就会一直保留
-
-          也可以用 Homebrew：
-
+          **推荐（Terminal 模式，权限稳定）：**
+          下载 `yimu-translator-<版本>-cli.zip`，解压后在终端运行：
+          ```bash
+          cd 解压目录
+          chmod +x run.sh && ./run.sh
           ```
-          brew install --cask ericjiang0423/tap/yimu-translator
-          ```
+          首次需授权 Terminal.app 屏幕录制权限（一次授权，永久有效）。
+
+          **备选（.app 模式）：**
+          下载 DMG 安装到应用程序，或 `brew install --cask ericjiang0423/tap/yimu-translator`。
 
           首次使用需自备腾讯云 TMT 的 SecretId / SecretKey，在设置左栏填好后点「测试 API」验证。
-
-          各文件的 SHA-256 见附件 `SHA256SUMS.txt`。
+          各文件 SHA-256 见附件 `SHA256SUMS.txt`。
           EOF
 
       - name: Publish GitHub release
@@ -67,7 +76,7 @@ jobs:
         run: |
           TAG="${{ steps.ver.outputs.tag }}"
           V="${{ steps.ver.outputs.version }}"
-          ASSETS=( "dist/yimu-translator-${V}.dmg" "dist/yimu-translator-${V}-app.zip" "dist/SHA256SUMS.txt" )
+          ASSETS=( "dist/yimu-translator-${V}.dmg" "dist/yimu-translator-${V}-app.zip" "dist/yimu-translator-${V}-cli.zip" "dist/SHA256SUMS.txt" )
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "${ASSETS[@]}" --clobber
           else

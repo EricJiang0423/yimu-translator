@@ -16,17 +16,37 @@
 
 ## 安装
 
-> ⚠️ 译幕没有 Apple 开发者账号，发布的包是 **ad-hoc 签名、未公证**。macOS Gatekeeper 首次启动会拦截——这是常态，不是出问题了。Homebrew 安装的也不例外，因为 app 本身没有 Apple 公证。
->
-> **两种安装方式装完后，首次打开都必须手动放行一次**，两种流程完全相同。
+译幕没有 Apple 开发者账号，发布的二进制是 ad-hoc 签名、未公证。因此推荐**从终端（Terminal）运行**——只需给 Terminal.app 授权一次屏幕录制，以后所有版本永不重新授权。
 
-### 安装方式
+### 方式一（推荐）：下载 CLI 包，从终端运行
 
-**方式一：Homebrew**
+从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 `yimu-translator-<版本>-cli.zip`，解压后终端运行：
+
+```bash
+cd 解压目录
+chmod +x run.sh
+./run.sh
+```
+
+或直接：
+
+```bash
+./game-translator
+```
+
+首次使用会弹出屏幕录制权限对话框——点 **「允许」**。如果点了不允许或没看到弹窗，去「系统设置 → 隐私与安全性 → 屏幕录制」勾上 **Terminal.app**，**完全退出终端（⌘Q）再重新打开**。
+
+> Terminal 授权一次，永久有效。以后下载新版本替换文件即可，权限不会丢失。
+
+### 方式二（备选）：.app / DMG / Homebrew
+
+下载 `yimu-translator-<版本>.dmg` 安装到应用程序，或通过 Homebrew：
 
 ```bash
 brew install --cask ericjiang0423/tap/yimu-translator
 ```
+
+> ⚠️ 未公证 .app 在 macOS Sequoia 上权限流程复杂：首次启动需 Gatekeeper 放行（系统设置 → 隐私 → 仍要打开），且每次更新版本后因签名指纹变化需要重新授权屏幕录制。**如果你遇到权限问题，建议切换回方式一。**
 
 卸载：
 
@@ -34,29 +54,6 @@ brew install --cask ericjiang0423/tap/yimu-translator
 brew uninstall --cask yimu-translator
 rm -rf ~/Library/Preferences/com.yimu.app.plist
 ```
-
-**方式二：从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 DMG**
-
-下载 `yimu-translator-<版本>.dmg`，把「译幕.app」拖进「应用程序」。
-
-### 首次启动（Gatekeeper 放行）
-
-macOS 会拦截未公证的 app。不管用 brew 还是 DMG，首次启动流程如下：
-
-1. 打开「译幕.app」（正常双击或 Launchpad），macOS 弹出警告 **「无法验证开发者」**→ 点「**好**」。
-2. 打开 **「系统设置 → 隐私与安全性」**，下拉到 **安全性** 区域。
-3. 你会看到一行提示 *「译幕 已被阻止打开」*，旁边有 **「仍要打开」** 按钮 — 点它，再点弹窗中的 **「打开」**。
-
-### 屏幕录制权限
-
-译幕需要用屏幕录制来截取游戏台词区域。这个权限只在 App **启动时**读取一次。
-
-| 操作 | 结果 |
-|------|------|
-| 启动 → 系统弹出权限对话框 → 点 **「允许」** | ✅ **当前进程立即生效**，可以继续 |
-| 点「不允许」或去系统设置手动勾上 | ❌ 必须 **⌘Q 完全退出**再重新打开才生效 |
-
-> 权限是按 App 的代码签名身份记录的。同一版本重装或替换 .app 后，签名指纹（cdhash）会变，需要重新授权。下载新版本同理。
 
 各 Release 附带的 `SHA256SUMS.txt` 可用于校验下载文件。
 
@@ -66,12 +63,10 @@ macOS 会拦截未公证的 app。不管用 brew 还是 DMG，首次启动流程
 
 ```bash
 scripts/build-direct.sh
-.build/direct/game-translator
+scripts/run.sh              # 编译后直接运行
 ```
 
-首次启动需要 macOS「屏幕录制」权限：
-- **从终端启动**：把权限授予「终端」（Terminal.app），然后重启终端再次执行命令。
-- **从 .app 启动**：同上安装章节的权限说明，屏幕录制权限只在启动时读取，**⌘Q 完全退出再重开**才生效。
+首次启动——如果系统弹出屏幕录制对话框，点 **「允许」**；如果点了不允许，去「系统设置 → 隐私与安全性 → 屏幕录制」勾上 Terminal.app，完全退出终端重开。
 
 构建 .app 安装包与 DMG：
 
