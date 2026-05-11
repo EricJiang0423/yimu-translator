@@ -28,6 +28,13 @@
 brew install --cask ericjiang0423/tap/yimu-translator
 ```
 
+卸载：
+
+```bash
+brew uninstall --cask yimu-translator
+rm -rf ~/Library/Preferences/com.yimu.app.plist
+```
+
 **方式二：从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 DMG**
 
 下载 `yimu-translator-<版本>.dmg`，把「译幕.app」拖进「应用程序」。
