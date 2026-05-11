@@ -17,15 +17,17 @@ final class ScreenCaptureService {
 
     /// Ensures screen-recording access is granted.
     /// Calls `CGRequestScreenCaptureAccess()` at most once per session.
-    /// If the user grants through the system dialog, the permission only takes
-    /// effect *after* the current process is restarted — so we always throw
-    /// permissionDenied here and tell the user to restart.
+    /// After the dialog (`Allow`) the permission applies to the current process
+    /// immediately — so we re-check. If still denied (`Deny` / canceled / settings
+    /// path) we throw and tell the user to restart.
     static func ensureCaptureAccess() throws {
         if CGPreflightScreenCaptureAccess() { return }
 
         if !requestedAccessThisSession {
             requestedAccessThisSession = true
-            CGRequestScreenCaptureAccess()
+            let _ = CGRequestScreenCaptureAccess()
+            // Re-check — "Allow" takes effect right away
+            if CGPreflightScreenCaptureAccess() { return }
         }
 
         throw ScreenCaptureError.permissionDenied
@@ -119,7 +121,7 @@ enum ScreenCaptureError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return "屏幕录制权限未开启。请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出（⌘Q）后重新打开 App。"
+            return "屏幕录制权限未开启：点「好」关闭后，如果系统弹出权限对话框请点「允许」，然后重试这里。如果已经点了「不允许」，请在「系统设置 → 隐私与安全性 → 屏幕录制」中勾选「译幕」，然后完全退出（⌘Q）后重新打开 App。"
         case .displayNotFound:
             return "Unable to find the selected display."
         }

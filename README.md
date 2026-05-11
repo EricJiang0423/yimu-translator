@@ -14,11 +14,15 @@
 - **图标：** 纯几何黑白——取景括角框住两行字幕条，无渐变、无文字。
 - **翻译服务：** 仅腾讯云 TMT。
 
-## 安装（下载预编译版）
+## 安装
 
-> ⚠️ 译幕没有 Apple 开发者账号，发布的包是 **ad-hoc 签名、未公证**。macOS Gatekeeper 首次启动会拦截，需要手动放行一次——这是常态，不是出问题了。
+> ⚠️ 译幕没有 Apple 开发者账号，发布的包是 **ad-hoc 签名、未公证**。macOS Gatekeeper 首次启动会拦截——这是常态，不是出问题了。Homebrew 安装的也不例外，因为 app 本身没有 Apple 公证。
+>
+> **两种安装方式装完后，首次打开都必须手动放行一次**，两种流程完全相同。
 
-**方式一：Homebrew（推荐）**
+### 安装方式
+
+**方式一：Homebrew**
 
 ```bash
 brew install --cask ericjiang0423/tap/yimu-translator
@@ -26,27 +30,43 @@ brew install --cask ericjiang0423/tap/yimu-translator
 
 **方式二：从 [Releases](https://github.com/EricJiang0423/yimu-translator/releases) 下载 DMG**
 
-下载 `yimu-translator-<版本>.dmg`，把「译幕.app」拖进「应用程序」，然后：
+下载 `yimu-translator-<版本>.dmg`，把「译幕.app」拖进「应用程序」。
 
-1. **右键点「译幕.app」→ 打开**（再点一次「打开」），或在终端执行：
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/译幕.app
-   ```
-2. 打开 App，授予屏幕录制权限：「系统设置 → 隐私与安全性 → 屏幕录制」里勾上「译幕」。
-3. **完全退出译幕（⌘Q），再重新打开**——屏幕录制权限只在启动时读取，不重启不生效。
+### 首次启动（Gatekeeper 放行）
 
-> 屏幕录制权限是按 App 的代码签名身份记录的。只要你**不用新版本覆盖**当前这个 `.app`，授权就一直有效；每次替换成新 build 都需要按上面重新放行 + 授权一次。
+macOS 会拦截未公证的 app。不管用 brew 还是 DMG，首次都需要：
 
-各 Release 的 `SHA256SUMS.txt` 可用于校验下载文件。
+```bash
+xattr -dr com.apple.quarantine /Applications/译幕.app
+```
+
+或者在访达中 **右键点「译幕.app」→ 打开（再点一次「打开」）**。
+
+### 屏幕录制权限
+
+译幕需要用屏幕录制来截取游戏台词区域。这个权限只在 App **启动时**读取一次。
+
+| 操作 | 结果 |
+|------|------|
+| 启动 → 系统弹出权限对话框 → 点 **「允许」** | ✅ **当前进程立即生效**，可以继续 |
+| 点「不允许」或去系统设置手动勾上 | ❌ 必须 **⌘Q 完全退出**再重新打开才生效 |
+
+> 权限是按 App 的代码签名身份记录的。同一版本重装或替换 .app 后，签名指纹（cdhash）会变，需要重新授权。下载新版本同理。
+
+各 Release 附带的 `SHA256SUMS.txt` 可用于校验下载文件。
 
 ## 从源码构建运行
+
+需要安装 Xcode Command Line Tools：`xcode-select --install`。
 
 ```bash
 scripts/build-direct.sh
 .build/direct/game-translator
 ```
 
-首次启动需要 macOS「屏幕录制」权限：若从终端启动，把权限授予终端；若从 .app 启动，把权限授予「译幕」，然后重启。
+首次启动需要 macOS「屏幕录制」权限：
+- **从终端启动**：把权限授予「终端」（Terminal.app），然后重启终端再次执行命令。
+- **从 .app 启动**：同上安装章节的权限说明，屏幕录制权限只在启动时读取，**⌘Q 完全退出再重开**才生效。
 
 构建 .app 安装包与 DMG：
 
@@ -54,6 +74,14 @@ scripts/build-direct.sh
 scripts/build-app.sh
 open ".build/app/译幕.app"
 ```
+
+## 快速上手
+
+1. 打开译幕，在左栏设置面板填入[腾讯云凭证](#配置腾讯云)。
+2. 点「测试 API」验证凭证是否正确。
+3. 点「自检」验证悬浮层显示正常。
+4. 点「开始」，屏幕上拖框选取游戏台词区域。松开后自动开始轮询翻译。
+5. 单次手动抓取用「立即翻译」，暂停用「开始/暂停」按钮。
 
 ## 快捷键
 
@@ -95,14 +123,6 @@ open ".build/app/译幕.app"
 
 填好后点「测试 API」。译幕会先保存表单，用所选源语言发一段简短的游戏对白样本走 TMT，把译文或服务端报错显示在右侧记录区。常见报错：`AuthFailure.SignatureFailure` 通常是 SecretKey 抄漏字符，`UnauthorizedOperation` 通常是没开通 TMT 服务或子账号没给策略。
 
-## 使用流程
-
-1. 填入腾讯云凭证。
-2. 点「测试 API」。
-3. 点「自检」验证悬浮层。
-4. 点「开始」，拖框选中游戏文字区域。
-5. 临时单次抓取用「立即翻译」；想持续翻译就让「开始」一直运行。
-
 ## 悬浮层操作
 
 - 拖顶部细条移动悬浮层。
@@ -123,10 +143,9 @@ swift test                # 见下方说明
 
 GitHub Actions：
 
-- `.github/workflows/ci.yml`：push 到 `main` / PR 时在 `macos-15` 上跑上面的脚本并上传 `.app` 与 DMG 产物。
-- `.github/workflows/release.yml`：推送 `v*` tag 时自动构建、打包、生成 `SHA256SUMS.txt` 并创建 GitHub Release。发布新版本就：
+- `.github/workflows/ci.yml`：push 到 `main` / PR 时在 `macos-15` 上跑构建与测试，并上传产物。
+- `.github/workflows/release.yml`：推送 `v*` tag 时自动构建、打包、发布 GitHub Release。发新版本：
   ```bash
-  # 先把 Resources/Info.plist 里的 CFBundleShortVersionString 改好
-  git tag v1.0.0 && git push origin v1.0.0
+  git tag v1.0.1 && git push origin v1.0.1
   ```
-  Release 出来后，可把 `SHA256SUMS.txt` 里 DMG 的哈希填回 Homebrew tap 的 cask（当前 cask 用的是 `sha256 :no_check`）。
+  Release 发出后，把 `SHA256SUMS.txt` 里 DMG 的哈希更新到 Homebrew tap 的 cask 中。
