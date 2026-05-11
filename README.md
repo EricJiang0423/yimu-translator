@@ -36,11 +36,9 @@ brew install --cask ericjiang0423/tap/yimu-translator
 
 macOS 会拦截未公证的 app。不管用 brew 还是 DMG，首次都需要：
 
-```bash
-xattr -dr com.apple.quarantine /Applications/译幕.app
-```
+在**访达**中右键点「译幕.app」→ **打开**（弹出窗口再点一次「打开」）。
 
-或者在访达中 **右键点「译幕.app」→ 打开（再点一次「打开」）**。
+> macOS 上很多教程写 `xattr -dr com.apple.quarantine`，但新版本系统中仅靠去 quarantine 已不足以绕过未公证 app 的拦截，**右键 → 打开**是唯一可靠的路径。
 
 ### 屏幕录制权限
 
