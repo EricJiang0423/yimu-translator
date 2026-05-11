@@ -41,11 +41,11 @@ rm -rf ~/Library/Preferences/com.yimu.app.plist
 
 ### 首次启动（Gatekeeper 放行）
 
-macOS 会拦截未公证的 app。不管用 brew 还是 DMG，首次都需要：
+macOS 会拦截未公证的 app。不管用 brew 还是 DMG，首次启动流程如下：
 
-在**访达**中右键点「译幕.app」→ **打开**（弹出窗口再点一次「打开」）。
-
-> macOS 上很多教程写 `xattr -dr com.apple.quarantine`，但新版本系统中仅靠去 quarantine 已不足以绕过未公证 app 的拦截，**右键 → 打开**是唯一可靠的路径。
+1. 打开「译幕.app」（正常双击或 Launchpad），macOS 弹出警告 **「无法验证开发者」**→ 点「**好**」。
+2. 打开 **「系统设置 → 隐私与安全性」**，下拉到 **安全性** 区域。
+3. 你会看到一行提示 *「译幕 已被阻止打开」*，旁边有 **「仍要打开」** 按钮 — 点它，再点弹窗中的 **「打开」**。
 
 ### 屏幕录制权限
 
