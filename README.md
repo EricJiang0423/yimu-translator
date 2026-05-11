@@ -64,15 +64,36 @@ open ".build/app/译幕.app"
 
 ## 配置腾讯云
 
-在「译幕」设置面板（左栏）中：
+译幕本身只负责本地 OCR + 调腾讯云的「机器翻译 TMT」接口，不会代收任何费用，密钥只保存在你本机的 UserDefaults 里。
 
-- `SecretId`：腾讯云 API SecretId
-- `SecretKey`：腾讯云 API SecretKey
+### 1. 注册并开通腾讯云 TMT
+
+1. **注册账号**：[cloud.tencent.com/register](https://cloud.tencent.com/register)（可用微信/QQ/邮箱）。
+2. **实名认证**：[console.cloud.tencent.com/developer/auth](https://console.cloud.tencent.com/developer/auth)。腾讯云接入接口前必须实名（个人或企业），用身份证 + 人脸刷一下就行。
+3. **开通「机器翻译 TMT」服务**：进 [console.cloud.tencent.com/tmt](https://console.cloud.tencent.com/tmt)，点「立即开通」勾选服务协议。TMT 目前有**每月 500 万字符的免费额度**（以腾讯云控制台显示为准），超出按字符计费，价格在控制台的「计费概述」里查。日常游戏字幕量很小，基本用不完免费额度。
+4. *（可选，推荐）* 在控制台「财务 → 费用中心 → [费用预警](https://console.cloud.tencent.com/account/usercenter)」给账号设个小额预警，万一调用量异常能及时收到通知。
+
+### 2. 拿到 API 密钥（SecretId / SecretKey）
+
+强烈建议**用子账号**而不是主账号根密钥，权限收到最小：
+
+1. 进 [访问管理 CAM → 用户 → 用户列表](https://console.cloud.tencent.com/cam) → 「新建用户」→「自定义创建」→ 选「可访问资源并接收消息」。
+2. 给这个子账号关联策略 `QcloudTMTFullAccess`（只能用机器翻译这一项 API）。
+3. 用户创建完成后会显示 **SecretId / SecretKey**，**只显示一次**，立刻复制保存好；忘了只能重新生成。
+
+如果只是自己用、不想折腾子账号，也可以直接在 [API 密钥管理](https://console.cloud.tencent.com/cam/capi) 给主账号生成一对根密钥——权限最大、风险最大，泄漏等于账号被接管，**不要写进任何代码仓库或截图**。
+
+### 3. 在译幕里填入凭证
+
+打开译幕设置面板（左栏）：
+
+- `SecretId`：上一步拿到的 SecretId
+- `SecretKey`：上一步拿到的 SecretKey
 - `Region`：保持 `ap-guangzhou`，除非你的腾讯云资源要求其它区域
 - `源语言`：选择游戏文本区域显示的语言
 - `目标`：通常是 `简体中文`
 
-填好凭证后点「测试 API」。应用会先保存表单，再用所选源语言发一段简短的游戏对白样本走腾讯 TMT，然后在记录区显示译文预览或服务端报错。
+填好后点「测试 API」。译幕会先保存表单，用所选源语言发一段简短的游戏对白样本走 TMT，把译文或服务端报错显示在右侧记录区。常见报错：`AuthFailure.SignatureFailure` 通常是 SecretKey 抄漏字符，`UnauthorizedOperation` 通常是没开通 TMT 服务或子账号没给策略。
 
 ## 使用流程
 
